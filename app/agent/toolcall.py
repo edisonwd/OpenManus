@@ -9,7 +9,7 @@ from app.logger import logger
 from app.prompt.toolcall import NEXT_STEP_PROMPT, SYSTEM_PROMPT
 from app.schema import TOOL_CHOICE_TYPE, AgentState, Message, ToolCall, ToolChoice
 from app.tool import CreateChatCompletion, Terminate, ToolCollection
-
+import chainlit as cl
 
 TOOL_CALL_REQUIRED = "Tool calls required but none provided"
 
@@ -108,7 +108,9 @@ class ToolCallAgent(ReActAgent):
             # For 'auto' mode, continue with content if no commands but content exists
             if self.tool_choices == ToolChoice.AUTO and not self.tool_calls:
                 return bool(response.content)
-
+            async with cl.Step(name="模型回复", type='llm') as step:
+                step.input = self.messages
+                step.output = response.content
             return bool(self.tool_calls)
         except Exception as e:
             logger.error(f"🚨 Oops! The {self.name}'s thinking process hit a snag: {e}")
@@ -127,7 +129,8 @@ class ToolCallAgent(ReActAgent):
 
             # Return last message content if no tool calls
             return self.messages[-1].content or "No content or commands to execute"
-
+        async with cl.Step(name="工具", type='tool') as step:
+            step.output = self.tool_calls
         results = []
         for command in self.tool_calls:
             result = await self.execute_tool(command)
@@ -144,6 +147,10 @@ class ToolCallAgent(ReActAgent):
                 content=result, tool_call_id=command.id, name=command.function.name
             )
             self.memory.add_message(tool_msg)
+
+            async with cl.Step(name=command.id, type='tool') as step:
+                step.input = command
+                step.output = result
             results.append(result)
 
         return "\n\n".join(results)

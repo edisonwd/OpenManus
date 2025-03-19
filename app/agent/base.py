@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 from app.llm import LLM
 from app.logger import logger
 from app.schema import ROLE_TYPE, AgentState, Memory, Message
-
+import chainlit as cl
 
 class BaseAgent(BaseModel, ABC):
     """Abstract base class for managing agent state and execution.

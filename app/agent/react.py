@@ -6,7 +6,7 @@ from pydantic import Field
 from app.agent.base import BaseAgent
 from app.llm import LLM
 from app.schema import AgentState, Memory
-
+import chainlit as cl
 
 class ReActAgent(BaseAgent, ABC):
     name: str
@@ -30,6 +30,7 @@ class ReActAgent(BaseAgent, ABC):
     async def act(self) -> str:
         """Execute decided actions"""
 
+    @cl.step
     async def step(self) -> str:
         """Execute a single step: think and act."""
         should_act = await self.think()
